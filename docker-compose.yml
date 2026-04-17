@@ -1,0 +1,115 @@
+# ============================================
+# 抽奖服务 - Docker Compose配置
+# 支持多环境部署
+# ============================================
+
+version: '3.8'
+
+services:
+  draw-service-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SPRING_PROFILE: dev
+    image: draw-service:dev
+    container_name: draw-service-dev
+    environment:
+      # 指定运行环境为dev
+      SPRING_PROFILES_ACTIVE: dev
+      # Nacos配置
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: dev
+      # 数据库配置
+      MYSQL_URL: jdbc:mysql://mysql:3306/lottery?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root123
+      # Redis配置
+      REDIS_CLUSTER_NODES: redis:7000,redis:7001,redis:7002,redis:7003,redis:7004,redis:7005
+      # Kafka配置
+      KAFKA_SERVERS: kafka:9092
+      # MongoDB配置
+      MONGODB_URI: mongodb://mongodb:27017/lottery
+    ports:
+      - "8080:8080"
+    networks:
+      - draw-network
+    profiles:
+      - dev
+
+  draw-service-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SPRING_PROFILE: test
+    image: draw-service:test
+    container_name: draw-service-test
+    environment:
+      # 指定运行环境为test
+      SPRING_PROFILES_ACTIVE: test
+      # Nacos配置
+      NACOS_SERVER_ADDR: nacos-test:8848
+      NACOS_NAMESPACE: test
+      # 数据库配置
+      MYSQL_URL: jdbc:mysql://mysql-test:3306/lottery?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+      MYSQL_USERNAME: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # Redis配置
+      REDIS_CLUSTER_NODES: ${REDIS_CLUSTER_NODES}
+      # Kafka配置
+      KAFKA_SERVERS: ${KAFKA_SERVERS}
+      # MongoDB配置
+      MONGODB_URI: ${MONGODB_URI}
+    ports:
+      - "8080:8080"
+    networks:
+      - draw-network
+    profiles:
+      - test
+
+  draw-service-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SPRING_PROFILE: prod
+    image: draw-service:prod
+    container_name: draw-service-prod
+    environment:
+      # 指定运行环境为prod
+      SPRING_PROFILES_ACTIVE: prod
+      # Nacos配置
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR}
+      NACOS_NAMESPACE: ${NACOS_NAMESPACE}
+      NACOS_USERNAME: ${NACOS_USERNAME}
+      NACOS_PASSWORD: ${NACOS_PASSWORD}
+      # 数据库配置
+      MYSQL_URL: ${MYSQL_URL}
+      MYSQL_USERNAME: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # Redis配置
+      REDIS_CLUSTER_NODES: ${REDIS_CLUSTER_NODES}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # Kafka配置
+      KAFKA_SERVERS: ${KAFKA_SERVERS}
+      # MongoDB配置
+      MONGODB_URI: ${MONGODB_URI}
+      # Sentinel配置
+      SENTINEL_DASHBOARD: ${SENTINEL_DASHBOARD}
+    ports:
+      - "8080:8080"
+    networks:
+      - draw-network
+    profiles:
+      - prod
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+networks:
+  draw-network:
+    driver: bridge

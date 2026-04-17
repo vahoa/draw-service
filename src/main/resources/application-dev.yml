@@ -1,0 +1,136 @@
+# ============================================
+# 开发环境（profile = dev）
+# Nacos DataId：draw-service-dev.yml
+# ============================================
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+    import:
+      - optional:nacos:draw-service-dev.yml?group=${NACOS_REMOTE_GROUP:DEV}&refreshEnabled=true
+
+  servlet:
+    context-path: /
+
+  cloud:
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8080}
+        port: 8719
+      datasource:
+        flow:
+          nacos:
+            server-addr: ${spring.cloud.nacos.server-addr}
+            dataId: ${spring.application.name}-dev-flow-rules
+            groupId: SENTINEL_GROUP
+            rule-type: flow
+        degrade:
+          nacos:
+            server-addr: ${spring.cloud.nacos.server-addr}
+            dataId: ${spring.application.name}-dev-degrade-rules
+            groupId: SENTINEL_GROUP
+            rule-type: degrade
+
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/lottery?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:123456}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 50
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+  data:
+    # 仅用于 Redisson 解析连接（无 spring-boot-starter-data-redis / Lettuce）
+    redis:
+      cluster:
+        nodes:
+          - localhost:7000
+          - localhost:7001
+          - localhost:7002
+          - localhost:7003
+          - localhost:7004
+          - localhost:7005
+        max-redirects: 3
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/lottery}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      retries: 3
+      batch-size: 16384
+      buffer-memory: 33554432
+      acks: 1
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: draw-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 500
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 10
+
+server:
+  tomcat:
+    threads:
+      max: 500
+      min-spare: 50
+    max-connections: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: dev
+
+mybatis-flex:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    print-banner: false
+
+lottery:
+  anti-cheat:
+    enabled: true
+    user-rate-limit: 5
+    ip-rate-limit: 20
+    window-size: 60
+    blacklist-duration: 30
+  draw:
+    default-daily-quota: 3
+    free-quota: 1
+    lock-wait-time: 3
+    lock-lease-time: 10
+  stock:
+    cache-ttl: 60
+    warning-threshold: 100
+
+logging:
+  level:
+    cn.vahoa.draw: DEBUG
+    com.mybatisflex: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"

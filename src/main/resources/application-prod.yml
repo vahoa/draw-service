@@ -1,0 +1,130 @@
+# ============================================
+# 生产环境（profile = prod）
+# Nacos DataId：draw-service-prod.yml
+# ============================================
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import:
+      - nacos:draw-service-prod.yml?group=${NACOS_REMOTE_GROUP:PROD_GROUP}&refreshEnabled=true
+
+  servlet:
+    context-path: /
+
+  cloud:
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:sentinel-dashboard:8080}
+        port: 8719
+      datasource:
+        flow:
+          nacos:
+            server-addr: ${spring.cloud.nacos.server-addr}
+            dataId: ${spring.application.name}-prod-flow-rules
+            groupId: SENTINEL_GROUP
+            rule-type: flow
+        degrade:
+          nacos:
+            server-addr: ${spring.cloud.nacos.server-addr}
+            dataId: ${spring.application.name}-prod-degrade-rules
+            groupId: SENTINEL_GROUP
+            rule-type: degrade
+
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/lottery?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD}
+    hikari:
+      minimum-idle: 20
+      maximum-pool-size: 100
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  data:
+    redis:
+      cluster:
+        nodes:
+          - ${REDIS_NODE_0:127.0.0.1:7000}
+          - ${REDIS_NODE_1:127.0.0.1:7001}
+          - ${REDIS_NODE_2:127.0.0.1:7002}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/lottery}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    consumer:
+      group-id: draw-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: manual_immediate
+
+server:
+  tomcat:
+    threads:
+      max: 800
+      min-spare: 80
+    max-connections: 20000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: prod
+
+mybatis-flex:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+  global-config:
+    print-banner: false
+
+lottery:
+  anti-cheat:
+    enabled: true
+    user-rate-limit: 5
+    ip-rate-limit: 20
+    window-size: 60
+    blacklist-duration: 30
+  draw:
+    default-daily-quota: 3
+    free-quota: 1
+    lock-wait-time: 3
+    lock-lease-time: 10
+  stock:
+    cache-ttl: 60
+    warning-threshold: 100
+
+logging:
+  level:
+    root: WARN
+    cn.vahoa.draw: INFO
+    com.mybatisflex: WARN
+    org.springframework.web: WARN
+  file:
+    name: /var/log/draw-service/application.log
+    max-size: 100MB
+    max-history: 30
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"

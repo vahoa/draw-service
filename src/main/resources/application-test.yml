@@ -1,0 +1,121 @@
+# ============================================
+# 测试环境（profile = test）
+# Nacos DataId：draw-service-test.yml
+# ============================================
+
+spring:
+  config:
+    activate:
+      on-profile: test
+    import:
+      - optional:nacos:draw-service-test.yml?group=${NACOS_REMOTE_GROUP:TEST_GROUP}&refreshEnabled=true
+
+  servlet:
+    context-path: /
+
+  cloud:
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8080}
+        port: 8719
+      datasource:
+        flow:
+          nacos:
+            server-addr: ${spring.cloud.nacos.server-addr}
+            dataId: ${spring.application.name}-test-flow-rules
+            groupId: SENTINEL_GROUP
+            rule-type: flow
+        degrade:
+          nacos:
+            server-addr: ${spring.cloud.nacos.server-addr}
+            dataId: ${spring.application.name}-test-degrade-rules
+            groupId: SENTINEL_GROUP
+            rule-type: degrade
+
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/lottery_test?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root123}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  data:
+    redis:
+      cluster:
+        nodes:
+          - localhost:7000
+          - localhost:7001
+          - localhost:7002
+        max-redirects: 3
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/lottery_test}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: draw-service-group-test
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: test
+
+mybatis-flex:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+  global-config:
+    print-banner: false
+
+lottery:
+  anti-cheat:
+    enabled: true
+    user-rate-limit: 10
+    ip-rate-limit: 40
+    window-size: 60
+    blacklist-duration: 15
+  draw:
+    default-daily-quota: 3
+    free-quota: 1
+    lock-wait-time: 3
+    lock-lease-time: 10
+  stock:
+    cache-ttl: 30
+    warning-threshold: 50
+
+logging:
+  level:
+    cn.vahoa.draw: INFO
+    com.mybatisflex: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"

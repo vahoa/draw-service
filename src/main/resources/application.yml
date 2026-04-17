@@ -1,0 +1,44 @@
+# ============================================
+# 主配置（仅端口 + Nacos 核心）
+#
+# Nacos 远程配置 DataId 约定（各环境一致）：
+#   {spring.application.name}-{profile}.yml
+# 例如：draw-service-dev.yml、draw-service-test.yml、draw-service-prod.yml
+#
+# 具体 import 与各环境业务项见 application-{profile}.yml
+# ============================================
+
+server:
+  port: 8080
+
+management:
+  server:
+    port: 18081
+
+spring:
+  application:
+    name: draw-service
+  profiles:
+    active: @spring.profiles.active@
+
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+      username: ${NACOS_USERNAME:}
+      password: ${NACOS_PASSWORD:}
+      namespace: ${NACOS_NAMESPACE:}
+      discovery:
+        enabled: true
+        group: ${spring.profiles.active}
+        namespace: ${spring.cloud.nacos.namespace}
+        metadata:
+          version: 1.0.0
+          region: ${REGION:default}
+        heart-beat-interval: 5000
+        heart-beat-timeout: 15000
+      config:
+        enabled: true
+        group: ${spring.profiles.active}
+        file-extension: yml
+        namespace: ${spring.cloud.nacos.namespace}
+        refresh-enabled: true
